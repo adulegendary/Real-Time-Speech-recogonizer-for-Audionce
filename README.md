@@ -32,7 +32,10 @@ This project aims to build a real-time speech recognition system that uses voice
 
 ---
 
-## 🧩 System Design
+
+## System Architecture
+
+```text
  ┌────────────────────────┐
  │     Microphone Input   │
  │ (Priest / Speaker)     │
@@ -88,9 +91,3 @@ This project aims to build a real-time speech recognition system that uses voice
          │ - Multilingual subs   │
          └────────────────────────┘
 
-```mermaid
-graph TD
-A[Microphone Input] --> B[Speech Recognition Engine]
-B --> C[Live Transcript]
-C --> D[Slide Text Matching]
-D --> E[Subtitle Display on Slide]
