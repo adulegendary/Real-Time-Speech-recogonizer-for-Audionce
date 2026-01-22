@@ -33,6 +33,60 @@ This project aims to build a real-time speech recognition system that uses voice
 ---
 
 ## 🧩 System Design
+ ┌────────────────────────┐
+ │     Microphone Input   │
+ │ (Priest / Speaker)     │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │ Voice Activity Detection│
+ │ (Remove silence/noise) │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │ Speaker Identification │
+ │ (Priest verification) │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │   Speech-to-Text (STT) │
+ │ Whisper / Google STT  │
+ │ Output: Ge’ez/Tigrinya│
+ │ + timestamps          │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │ Semantic Matching Layer│
+ │ Sentence-BERT + TF-IDF│
+ │ Matches spoken text → │
+ │ slide line ID         │
+ └───────────┬────────────┘
+             │
+      ┌──────┴────────┐
+      │               │
+      ▼               ▼
+┌────────────────┐  ┌────────────────────────┐
+│ Slide Highlight │  │   Translation Layer    │
+│ (UI Sync)       │  │                        │
+│ Highlights      │  │  A) Pre-Aligned Lookup │
+│ active line     │  │     (Ge’ez → English) │
+└────────┬────────┘  │                        │
+         │            │  B) Live NMT (Future) │
+         │            │     MarianMT / NLLB   │
+         │            │     (Free-form speech)│
+         │            └──────────┬────────────┘
+         │                       │
+         └──────────┬────────────┘
+                    ▼
+         ┌────────────────────────┐
+         │ Frontend (React + UI)  │
+         │ - Highlighted slide   │
+         │ - Multilingual subs   │
+         └────────────────────────┘
 
 ```mermaid
 graph TD
