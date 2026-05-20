@@ -1,5 +1,12 @@
 # Ignore virtual environment
 venv/
+virtual/
+
+# Windows Zone.Identifier files
+*.Zone.Identifier
+
+# Claude Code
+.claude/
 
 # Byte-compiled / cache files
 __pycache__/
@@ -17,3 +24,6 @@ Thumbs.db
 # Logs or temp files
 *.log
 *.tmp
+
+# Google Cloud credentials — never commit this
+google-credentials.json

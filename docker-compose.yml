@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    devices:
+      # Pass through host audio device for microphone access
+      - /dev/snd:/dev/snd
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials
+    secrets:
+      - google_credentials
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src   # 👈 every change instantly update in our container
+    group_add:
+      - audio
+
+secrets:
+  google_credentials:
+    file: ./google-credentials.json

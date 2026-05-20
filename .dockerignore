@@ -1,0 +1,13 @@
+virtual/
+.git/
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.Zone.Identifier
+noteBooks/
+models/
+.claude/
+google-credentials.json
+meta-spirit-496918-r7-d6a965a931df.json
