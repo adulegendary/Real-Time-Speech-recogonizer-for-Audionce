@@ -1,0 +1,230 @@
+[
+  {
+    "id": 1,
+    "role": "priest",
+    "section": "Opening",
+    "text": "ቡረክ እግዚአብሔር አምላከ አበዊነ"
+  },
+  {
+    "id": 2,
+    "role": "congregation",
+    "section": "Opening",
+    "text": "ወቡሩክ ስሙ ለዓለመ ዓለም"
+  },
+  {
+    "id": 3,
+    "role": "deacon",
+    "section": "Opening",
+    "text": "ቁሙ ለጸሎት"
+  },
+  {
+    "id": 4,
+    "role": "priest",
+    "section": "Greeting",
+    "text": "ሰላም ለኩሉ"
+  },
+  {
+    "id": 5,
+    "role": "congregation",
+    "section": "Greeting",
+    "text": "ወለመንፈስከ ኒ"
+  },
+  {
+    "id": 6,
+    "role": "deacon",
+    "section": "Greeting",
+    "text": "አቅሙ ወአስተዳልዉ"
+  },
+  {
+    "id": 7,
+    "role": "priest",
+    "section": "Sursum Corda",
+    "text": "አሳዕሎ ልቦናክሙ"
+  },
+  {
+    "id": 8,
+    "role": "congregation",
+    "section": "Sursum Corda",
+    "text": "አሎን ኀበ እግዚአብሔር"
+  },
+  {
+    "id": 9,
+    "role": "priest",
+    "section": "Sursum Corda",
+    "text": "ናስተሠናዕ ለእግዚአብሔር"
+  },
+  {
+    "id": 10,
+    "role": "congregation",
+    "section": "Sursum Corda",
+    "text": "ዮቤ ወሰናዕ"
+  },
+  {
+    "id": 11,
+    "role": "priest",
+    "section": "Sanctus Preface",
+    "text": "ቅዱስ አንተ ወቅዱስ ስምከ ወቅዱስ ወልድከ"
+  },
+  {
+    "id": 12,
+    "role": "congregation",
+    "section": "Sanctus",
+    "text": "ቅዱስ ቅዱስ ቅዱስ እግዚአብሔር ሰባዖት"
+  },
+  {
+    "id": 13,
+    "role": "congregation",
+    "section": "Sanctus",
+    "text": "ወሰማይ ወምድር ሙሉ ስብሐቲሁ"
+  },
+  {
+    "id": 14,
+    "role": "congregation",
+    "section": "Sanctus",
+    "text": "ሆሣዕና በአርያም"
+  },
+  {
+    "id": 15,
+    "role": "congregation",
+    "section": "Sanctus",
+    "text": "ቡሩክ ዘይመጽእ በስመ እግዚአብሔር"
+  },
+  {
+    "id": 16,
+    "role": "priest",
+    "section": "Institution",
+    "text": "ዝንቱ ውእቱ ሥጋየ ዘይትወሀብ ለእለ ብዙኃን"
+  },
+  {
+    "id": 17,
+    "role": "priest",
+    "section": "Institution",
+    "text": "ዝንቱ ውእቱ ደምየ ዘሐዲስ ኪዳን"
+  },
+  {
+    "id": 18,
+    "role": "deacon",
+    "section": "Institution",
+    "text": "ፍትሑ ወስተዩ ኩልክሙ እምኔሁ"
+  },
+  {
+    "id": 19,
+    "role": "congregation",
+    "section": "Anamnesis",
+    "text": "ሞቶ ነዝከር ወትንሣኤሁ ነአምን"
+  },
+  {
+    "id": 20,
+    "role": "priest",
+    "section": "Epiclesis",
+    "text": "ለዝ ኅብስት ወለዝ ጽዋዕ"
+  },
+  {
+    "id": 21,
+    "role": "priest",
+    "section": "Epiclesis",
+    "text": "ንስእለከ ወንትለምነከ ቅዱስ ቅዱሳን"
+  },
+  {
+    "id": 22,
+    "role": "deacon",
+    "section": "Intercessions",
+    "text": "እስቡ ወስምዑ ኩልክሙ"
+  },
+  {
+    "id": 23,
+    "role": "priest",
+    "section": "Lord's Prayer",
+    "text": "አቡነ ዘበሰማያት ይትቀደስ ስምከ"
+  },
+  {
+    "id": 24,
+    "role": "congregation",
+    "section": "Lord's Prayer",
+    "text": "ትምጻእ መንግሥትከ ይኩን ፈቃድከ"
+  },
+  {
+    "id": 25,
+    "role": "congregation",
+    "section": "Lord's Prayer",
+    "text": "ሲሳየነ ዘለዕለ ሀቡነ ዮም"
+  },
+  {
+    "id": 26,
+    "role": "congregation",
+    "section": "Lord's Prayer",
+    "text": "ወተዐርቀልነ ኀጢአተነ"
+  },
+  {
+    "id": 27,
+    "role": "congregation",
+    "section": "Lord's Prayer",
+    "text": "ወኢታብኣነ ውስተ መንሱት"
+  },
+  {
+    "id": 28,
+    "role": "congregation",
+    "section": "Lord's Prayer",
+    "text": "አላ አድኅነነ እምእኩይ ለዓለም ዓለም አሜን"
+  },
+  {
+    "id": 29,
+    "role": "priest",
+    "section": "Fraction",
+    "text": "ቅዱሳት ለቅዱሳን"
+  },
+  {
+    "id": 30,
+    "role": "congregation",
+    "section": "Fraction",
+    "text": "አሐዱ ቅዱስ አሐዱ እግዚእ ኢየሱስ ክርስቶስ"
+  },
+  {
+    "id": 31,
+    "role": "deacon",
+    "section": "Communion",
+    "text": "ቀርቡ ወንሠቱ ቅዱሳት"
+  },
+  {
+    "id": 32,
+    "role": "priest",
+    "section": "Communion",
+    "text": "ሥጋ ወደም ወልደ እግዚአብሔር"
+  },
+  {
+    "id": 33,
+    "role": "congregation",
+    "section": "Communion",
+    "text": "ሃሌ ሉያ ሃሌ ሉያ ሃሌ ሉያ"
+  },
+  {
+    "id": 34,
+    "role": "priest",
+    "section": "Dismissal",
+    "text": "ሑሩ በሰላም"
+  },
+  {
+    "id": 35,
+    "role": "congregation",
+    "section": "Dismissal",
+    "text": "ወስመ እግዚአብሔር ይኩን ቡሩክ"
+  },
+  {
+    "id": 36,
+    "role": "deacon",
+    "section": "Dismissal",
+    "text": "ሰጊድ ለእግዚአብሔር"
+  },
+  {
+    "id": 37,
+    "role": "priest",
+    "section": "Blessing",
+    "text": "ይባርኽክሙ እግዚአብሔር ወይሕፍጽክሙ"
+  },
+  {
+    "id": 38,
+    "role": "congregation",
+    "section": "Blessing",
+    "text": "አሜን አሜን አሜን"
+  }
+]

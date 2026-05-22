@@ -3,9 +3,9 @@ import json
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-SLIDE_FILE  = "data/slide_text.json"
-EMBED_DIR   = "data/embeddings"
-MODEL_NAME  = "LaBSE"
+LITURGY_FILE = "data/geeze_liturgy.json"
+EMBED_DIR    = "data/embeddings"
+MODEL_NAME   = "LaBSE"
 
 os.makedirs(EMBED_DIR, exist_ok=True)
 
@@ -13,43 +13,39 @@ print(f"Loading {MODEL_NAME} model...")
 model = SentenceTransformer(MODEL_NAME)
 print("Model ready.\n")
 
-# ── 1. Embed slide lines ────────────────────────────────────────────
-with open(SLIDE_FILE, encoding="utf-8") as f:
-    slides = json.load(f)
+# ── 1. Embed every liturgy line ─────────────────────────────────────
+with open(LITURGY_FILE, encoding="utf-8") as f:
+    liturgy = json.load(f)
 
-slide_texts = [s["text"] for s in slides]
-slide_roles = [s["role"] for s in slides]
+texts = [line["text"] for line in liturgy]
 
-print(f"Embedding {len(slide_texts)} slide lines...")
-slide_vectors = model.encode(slide_texts, normalize_embeddings=True)
+print(f"Embedding {len(texts)} liturgy lines...")
+book_vectors = model.encode(texts, normalize_embeddings=True, show_progress_bar=True)
 
-np.save(os.path.join(EMBED_DIR, "slide_vectors.npy"), slide_vectors)
-with open(os.path.join(EMBED_DIR, "slide_meta.json"), "w", encoding="utf-8") as f:
-    json.dump(slides, f, ensure_ascii=False, indent=2)
+np.save(os.path.join(EMBED_DIR, "book_vectors.npy"), book_vectors)
+with open(os.path.join(EMBED_DIR, "book_meta.json"), "w", encoding="utf-8") as f:
+    json.dump(liturgy, f, ensure_ascii=False, indent=2)
 
-print(f"Saved slide_vectors.npy  ({slide_vectors.shape})")
+print(f"\nSaved book_vectors.npy  shape: {book_vectors.shape}")
+print(f"Saved book_meta.json    ({len(liturgy)} lines)\n")
 
-# ── 2. Embed known transcripts ──────────────────────────────────────
-transcripts = {
-    "priest": "ሰዓት ክንደይ ትምለስ ኢ ካብ መጽናዕት ደልየካ ነይረ",
-    # deacon: add here once a Tigrinya recording is available
-}
+# ── 2. Quick match test using a sample Ge'ez phrase ─────────────────
+test_phrases = [
+    "ቅዱስ ቅዱስ ቅዱስ",
+    "ሰላም ለኩሉ",
+    "አቡነ ዘበሰማያት",
+    "ሃሌ ሉያ",
+]
 
-for speaker, text in transcripts.items():
-    vec = model.encode([text], normalize_embeddings=True)[0]
-    np.save(os.path.join(EMBED_DIR, f"{speaker}_text.npy"), vec)
-    print(f"Saved {speaker}_text.npy")
+print("=" * 60)
+print("  MATCH TEST — sample phrases vs book")
+print("=" * 60)
 
-# ── 3. Show similarity: transcript vs every slide line ─────────────
-print("\n" + "="*55)
-print("  MATCH TEST — Priest transcript vs slide lines")
-print("="*55)
-
-priest_vec = np.load(os.path.join(EMBED_DIR, "priest_text.npy"))
-scores = [(np.dot(priest_vec, sv), slides[i]["role"], slides[i]["text"])
-          for i, sv in enumerate(slide_vectors)]
-scores.sort(reverse=True)
-
-for score, role, text in scores:
-    bar = "█" * int(score * 20)
-    print(f"  {score:.3f} {bar:<20}  [{role}]  {text[:60]}")
+for phrase in test_phrases:
+    query_vec = model.encode([phrase], normalize_embeddings=True)[0]
+    scores = [(float(np.dot(query_vec, bv)), liturgy[i]) for i, bv in enumerate(book_vectors)]
+    scores.sort(reverse=True)
+    top = scores[0]
+    print(f"\n  Query : {phrase}")
+    print(f"  Match : [{top[1]['role']}] {top[1]['text']}  (score: {top[0]:.3f})")
+    print(f"  Section: {top[1]['section']}")

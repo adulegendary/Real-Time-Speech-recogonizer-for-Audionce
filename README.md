@@ -98,36 +98,49 @@ data/
 
 ## Roadmap
 
-### Phase 1 — Speaker Identification (In Progress)
+### Phase 1 — Speaker Identification (Done)
 > Know WHO is speaking before transcribing what they say.
 
 - [x] Record reference audio for a speaker (`record_audio.py`)
 - [x] Build voice embedding for priest (`build_embeddings_priest.py`)
 - [x] Real-time speaker identification loop (`live_synch.py`)
 - [x] One-shot speaker matching test (`matcher.py`)
-- [ ] Add deacon voice embedding and recording
+- [x] Upload deacon voice and build deacon embedding
+- [x] Resample deacon audio from 48kHz → 16kHz for pipeline consistency
+- [x] Verify priest vs deacon voice similarity score (0.47 — well separated)
 - [ ] Support N speakers (priest, deacon, lector, etc.)
 - [ ] Set a confidence threshold — reject unknown speakers
 
 ---
 
-### Phase 2 — Speech-to-Text Transcription
+### Phase 2 — Speech-to-Text Transcription (In Progress)
 > Convert the identified speaker's voice into text.
 
-- [ ] Integrate OpenAI Whisper into `trasncribe.py`
-- [ ] Stream audio chunks into Whisper in real time
+- [x] Build dual-backend transcriber (`trasncribe.py`) — Google STT + Whisper side by side
+- [x] Confirm Google STT (`ti-ET`) works for conversational Tigrinya speech
+- [x] Confirm Whisper `medium` does NOT support Tigrinya (no `ti` in language list)
+- [x] Identified that deacon recording is Ge'ez liturgical — outside current STT support
+- [ ] Wire Google STT into live speaker identification loop
+- [ ] Stream audio chunks in real time
 - [ ] Output transcription with timestamps per speaker
-- [ ] Support Ge'ez / Tigrinya / Amharic language output
+
+> **Language findings:**
+> - Google STT `ti-ET` → works for Tigrinya conversational speech ✅
+> - Whisper `medium` → no Tigrinya support, hallucinates other languages ❌
+> - Ge'ez liturgical → no cloud STT support yet; tackled via semantic matching instead
 
 ---
 
-### Phase 3 — Semantic Matching
-> Match transcribed speech to the correct line in the slides.
+### Phase 3 — Semantic Matching (In Progress)
+> Match speech audio to the correct line in the liturgy book — no perfect transcription needed.
 
-- [ ] Load slide content (text lines) from `.pptx` or PDF
-- [ ] Embed slide lines with Sentence-BERT
-- [ ] Match live transcription to closest slide line (cosine similarity)
+- [x] Add 38-line Ge'ez liturgy dataset (`data/geeze_liturgy.json`) covering full Mass structure
+- [x] Embed all liturgy lines with LaBSE multilingual model (`build_text_embeddings.py`)
+- [x] Save vector database to `data/embeddings/book_vectors.npy` (38 × 768)
+- [x] Verified partial phrase matching works (e.g. `ቅዱስ ቅዱስ ቅዱስ` → score 0.881, `ሰላም ለኩሉ` → score 1.000)
+- [ ] Wire live audio → Google STT → LaBSE → find closest liturgy line
 - [ ] Track position — move forward, never backward
+- [ ] Load real liturgy book from PDF/PPTX when available
 
 ---
 
@@ -162,15 +175,18 @@ data/
 
 ## Current Status
 
-| Module               | File                          | Status         |
-|----------------------|-------------------------------|----------------|
-| Audio recording      | `record_audio.py`             | Done           |
-| Voice embedding      | `build_embeddings_priest.py`  | Done (priest only) |
-| Live speaker ID      | `live_synch.py`               | Done (priest only) |
-| Speaker match test   | `matcher.py`                  | Done (basic)   |
-| Transcription (STT)  | `trasncribe.py`               | Not started    |
-| Speaker ID module    | `speaker_id.py`               | Not started    |
-| GUI / subtitles      | `gui_display.py`              | Not started    |
+| Module               | File                          | Status                        |
+|----------------------|-------------------------------|-------------------------------|
+| Audio recording      | `record_audio.py`             | Done                          |
+| Voice embedding      | `build_embeddings_priest.py`  | Done (priest + deacon)        |
+| Live speaker ID      | `live_synch.py`               | Done (priest + deacon)        |
+| Speaker match test   | `matcher.py`                  | Done (basic)                  |
+| Dual STT transcriber | `trasncribe.py`               | Done (Google STT + Whisper)   |
+| Liturgy text dataset | `data/geeze_liturgy.json`     | Done (38 lines, full Mass)    |
+| Text embedding build | `build_text_embeddings.py`    | Done (LaBSE, 38 × 768 vectors)|
+| Live semantic match  | `matcher.py`                  | In Progress                   |
+| Speaker ID module    | `speaker_id.py`               | Not started                   |
+| GUI / subtitles      | `gui_display.py`              | Not started                   |
 
 ---
 
