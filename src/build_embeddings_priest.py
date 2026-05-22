@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 # Define roles and voice files
-roles = ["priest"]
+roles = ["priest", "deacon"]
 voice_dir = "data/voices"
 embed_dir = "data/embeddings"
 

@@ -6,7 +6,7 @@ import tempfile
 import os
 
 # Load voice embeddings
-roles = ["priest"]
+roles = ["priest", "deacon"]
 embeddings = {}
 for role in roles:
     embeddings[role] = np.load(f"data/embeddings/{role}.npy")
