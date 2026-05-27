@@ -1,24 +1,29 @@
 """
-Sliding-window semantic matcher for live liturgy tracking.
+Page-aware sliding-window semantic matcher for live liturgy tracking.
 
-The window keeps only a small slice of the liturgy in play at any time:
+The liturgy is split into fixed-size pages (default 10 lines).
+The window covers exactly the current page, with a small lookbehind
+at page boundaries and early lookahead into the next page when we
+approach the end.
 
-  Full liturgy:  [0  1  2  3  4  5  6  7  8  9 ... 37]
-                          |←  active window  →|
-                    start                   end
-                               ↑
-                          confirmed_pos
+Window behaviour
+────────────────
+  Page 1 (ids 1-10)   → window = [0, 9]
+  Near end of page 1  → window = [0, 19]   (peek into page 2)
+  Confirmed in page 2 → window = [8, 19]   (left shrinks, right = page 2 end)
+  Near end of page 2  → window = [8, 29]   (peek into page 3)
+  ...
 
-Rules:
-  - LEFT shrinks:  window_start = confirmed_pos - lookbehind
-    (we discard lines we've already passed; small lookbehind handles repetitions)
-  - RIGHT expands: when confirmed_pos is within `expand_threshold` lines of
-    window_end, push window_end forward by another `lookahead` chunk
-  - confirmed_pos only moves FORWARD — the liturgy never goes backward
+Rules
+─────
+  1. confirmed_pos only moves FORWARD
+  2. LEFT  : window_start = max(0, current_page_start - lookbehind)
+  3. RIGHT : window_end   = current_page_end
+  4. EXPAND: if confirmed_pos >= current_page_end - expand_threshold
+             → window_end = next_page_end  (early lookahead)
 """
 
 import json
-import os
 
 import numpy as np
 
@@ -29,7 +34,7 @@ class LiturgyWindowMatcher:
         self,
         vectors: np.ndarray,
         meta: list,
-        lookahead: int = 6,
+        page_size: int = 10,
         lookbehind: int = 2,
         expand_threshold: int = 2,
     ):
@@ -38,9 +43,12 @@ class LiturgyWindowMatcher:
         ----------
         vectors          : (N, 768) LaBSE embeddings, L2-normalised
         meta             : list of N dicts {id, role, section, text}
-        lookahead        : lines to search ahead of confirmed position
-        lookbehind       : lines back we still allow (handles short repetitions)
-        expand_threshold : expand right when match is this close to window_end
+        page_size        : number of liturgy lines per page
+        lookbehind       : lines back into previous page we still search
+                           (helps at page boundaries where the priest may
+                            repeat the closing line of the previous page)
+        expand_threshold : when confirmed_pos is within this many lines of
+                           the current page end, peek into the next page
         """
         if vectors.shape[0] != len(meta):
             raise ValueError("vectors and meta must have the same length")
@@ -48,19 +56,30 @@ class LiturgyWindowMatcher:
         self.vectors = vectors.astype(np.float32)
         self.meta = meta
         self.N = len(meta)
-        self.lookahead = lookahead
+        self.page_size = page_size
         self.lookbehind = lookbehind
         self.expand_threshold = expand_threshold
 
+        # Build page boundaries: list of (start_idx, end_idx) inclusive
+        self._pages: list[tuple[int, int]] = []
+        for start in range(0, self.N, page_size):
+            end = min(start + page_size - 1, self.N - 1)
+            self._pages.append((start, end))
+
+        self._current_page: int = 0
         self._confirmed_pos: int = 0
         self._window_start: int = 0
-        self._window_end: int = min(lookahead, self.N - 1)
+        self._window_end: int = self._pages[0][1]
 
     # ── public properties ──────────────────────────────────────────────────
 
     @property
     def confirmed_pos(self) -> int:
         return self._confirmed_pos
+
+    @property
+    def current_page(self) -> int:
+        return self._current_page
 
     @property
     def window_start(self) -> int:
@@ -74,11 +93,15 @@ class LiturgyWindowMatcher:
     def window_size(self) -> int:
         return self._window_end - self._window_start + 1
 
+    @property
+    def total_pages(self) -> int:
+        return len(self._pages)
+
     # ── matching ───────────────────────────────────────────────────────────
 
     def match_vector(self, query_vec: np.ndarray) -> dict:
         """
-        Find the best liturgy line within the current window.
+        Find the best liturgy line within the current page window.
 
         Parameters
         ----------
@@ -87,18 +110,19 @@ class LiturgyWindowMatcher:
         Returns
         -------
         {
-          "idx"         : int    — global index in the full liturgy,
-          "score"       : float  — cosine similarity [0, 1],
-          "meta"        : dict   — {id, role, section, text},
-          "window"      : (start, end),
-          "window_size" : int,
+          "idx"          : int   — global index in the full liturgy,
+          "score"        : float — cosine similarity [0, 1],
+          "meta"         : dict  — {id, role, section, text},
+          "page"         : int   — current page number (1-indexed for display),
+          "window"       : (start, end),
+          "window_size"  : int,
         }
         """
         q = query_vec.astype(np.float32).ravel()
 
-        # Slice the window and compute cosine similarities in one dot-product
+        # Dot-product over only the current window slice
         window_vecs = self.vectors[self._window_start: self._window_end + 1]
-        scores = window_vecs @ q  # shape (window_size,)
+        scores = window_vecs @ q
 
         local_idx = int(scores.argmax())
         best_score = float(scores[local_idx])
@@ -110,6 +134,7 @@ class LiturgyWindowMatcher:
             "idx": global_idx,
             "score": round(best_score, 4),
             "meta": self.meta[global_idx],
+            "page": self._current_page + 1,
             "window": (self._window_start, self._window_end),
             "window_size": self.window_size,
         }
@@ -117,58 +142,80 @@ class LiturgyWindowMatcher:
     def match_text(self, text: str, model) -> dict:
         """
         Encode `text` with the given SentenceTransformer model, then match.
-        `model` should be a SentenceTransformer instance (LaBSE recommended).
         """
         vec = model.encode([text], normalize_embeddings=True)[0]
         return self.match_vector(vec)
 
-    # ── window management ──────────────────────────────────────────────────
+    # ── window / page management ───────────────────────────────────────────
 
     def _advance(self, matched_pos: int):
-        """Slide the window forward after a match at `matched_pos`."""
+        """Slide the page window forward after a match at `matched_pos`."""
 
         # Rule 1: confirmed position only moves forward
         if matched_pos > self._confirmed_pos:
             self._confirmed_pos = matched_pos
 
-        # Rule 2: left shrinks — drop dead lines behind lookbehind
-        self._window_start = max(0, self._confirmed_pos - self.lookbehind)
+        # Find which page the confirmed position belongs to
+        for page_idx, (pg_start, pg_end) in enumerate(self._pages):
+            if pg_start <= self._confirmed_pos <= pg_end:
+                self._current_page = page_idx
+                break
 
-        # Rule 3: right expands from confirmed position
-        desired_end = self._confirmed_pos + self.lookahead
+        pg_start, pg_end = self._pages[self._current_page]
 
-        # Rule 4: near-end expansion — if we're close to the current right
-        #         boundary, push it forward an extra chunk so we never run
-        #         out of lookahead before the window updates
-        if self._confirmed_pos >= self._window_end - self.expand_threshold:
-            desired_end += self.lookahead
+        # Rule 2: left shrinks to current page start minus small lookbehind
+        self._window_start = max(0, pg_start - self.lookbehind)
 
-        self._window_end = min(self.N - 1, desired_end)
+        # Rule 3: right = end of current page
+        self._window_end = pg_end
+
+        # Rule 4: near-end expansion — peek into the next page early
+        if self._confirmed_pos >= pg_end - self.expand_threshold:
+            next_idx = self._current_page + 1
+            if next_idx < len(self._pages):
+                self._window_end = self._pages[next_idx][1]
 
     def reset(self):
         """Reset to the beginning of the liturgy."""
+        self._current_page = 0
         self._confirmed_pos = 0
         self._window_start = 0
-        self._window_end = min(self.lookahead, self.N - 1)
+        self._window_end = self._pages[0][1]
 
-    # ── debug helpers ──────────────────────────────────────────────────────
+    # ── inspection helpers ─────────────────────────────────────────────────
 
     def window_summary(self) -> str:
-        """One-line ASCII diagram of the current window state."""
-        total = self.N
-        bar = list("." * total)
+        """
+        ASCII diagram showing the full liturgy, active window, and
+        confirmed position.
+
+        Example:
+          [.........█---------..................]  pos=9  page=1/4  win=[7,19]  size=13/38
+        """
+        bar = ["."] * self.N
         for i in range(self._window_start, self._window_end + 1):
             bar[i] = "-"
         bar[self._confirmed_pos] = "█"
         return (
             f"[{''.join(bar)}]  "
             f"pos={self._confirmed_pos}  "
+            f"page={self._current_page + 1}/{self.total_pages}  "
             f"win=[{self._window_start},{self._window_end}]  "
-            f"size={self.window_size}/{total}"
+            f"size={self.window_size}/{self.N}"
         )
 
+    def page_info(self) -> dict:
+        """Return info about the current page."""
+        pg_start, pg_end = self._pages[self._current_page]
+        return {
+            "page": self._current_page + 1,
+            "total_pages": self.total_pages,
+            "page_start": pg_start,
+            "page_end": pg_end,
+            "lines": self.meta[pg_start: pg_end + 1],
+        }
+
     def current_line(self) -> dict:
-        """Return metadata for the current confirmed position."""
         return self.meta[self._confirmed_pos]
 
     # ── factory ────────────────────────────────────────────────────────────
@@ -180,14 +227,14 @@ class LiturgyWindowMatcher:
         meta_path: str = "data/embeddings/book_meta.json",
         **kwargs,
     ) -> "LiturgyWindowMatcher":
-        """Load from saved numpy + json files."""
+        """Load vectors and metadata from saved files."""
         vectors = np.load(vectors_path)
         with open(meta_path, encoding="utf-8") as f:
             meta = json.load(f)
         return cls(vectors, meta, **kwargs)
 
 
-# ── CLI test ───────────────────────────────────────────────────────────────────
+# ── CLI demo ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     from sentence_transformers import SentenceTransformer
@@ -196,34 +243,48 @@ if __name__ == "__main__":
     model = SentenceTransformer("LaBSE")
     print("Model ready.\n")
 
-    matcher = LiturgyWindowMatcher.from_files()
+    matcher = LiturgyWindowMatcher.from_files(page_size=10)
 
-    # Simulate walking through the liturgy with a few spoken phrases
+    # Print the page layout so we can see what each page covers
+    print("=" * 60)
+    print("  PAGE LAYOUT  (page_size=10)")
+    print("=" * 60)
+    for p in range(matcher.total_pages):
+        pg_start, pg_end = matcher._pages[p]
+        section_set = {matcher.meta[i]["section"] for i in range(pg_start, pg_end + 1)}
+        print(f"  Page {p+1}: lines {pg_start+1}–{pg_end+1}  "
+              f"(ids {matcher.meta[pg_start]['id']}–{matcher.meta[pg_end]['id']})  "
+              f"sections: {', '.join(sorted(section_set))}")
+    print()
+
+    # Simulate phrases being spoken in order across pages
     test_queries = [
-        ("priest", "ቡረክ እግዚአብሔር"),           # Opening  → line 0
-        ("congregation", "ወቡሩክ ስሙ"),           # Opening  → line 1
-        ("deacon", "ቁሙ ለጸሎት"),                # Opening  → line 2
-        ("priest", "ሰላም ለኩሉ"),                 # Greeting → line 3
-        ("congregation", "ወለመንፈስከ"),           # Greeting → line 4
-        ("priest", "አሳዕሎ ልቦናክሙ"),              # Sursum   → line 6
-        ("congregation", "ቅዱስ ቅዱስ ቅዱስ"),      # Sanctus  → line 11
-        ("priest", "አቡነ ዘበሰማያት"),              # Lord's Prayer → line 22
-        ("congregation", "አሜን አሜን አሜን"),        # Blessing → line 37
+        # Page 1 (ids 1-10)
+        ("priest",       "ቡረክ እግዚአብሔር አምላከ"),           # id 1
+        ("congregation", "ወቡሩክ ስሙ"),                     # id 2
+        ("priest",       "ሰላም ለኩሉ"),                     # id 4
+        ("priest",       "ናስተሠናዕ ለእግዚአብሔር"),             # id 9  ← near page end
+        ("congregation", "ዮቤ ወሰናዕ"),                     # id 10 ← page end, window should expand
+        # Page 2 (ids 11-20)
+        ("priest",       "ቅዱስ አንተ ወቅዱስ ስምከ"),            # id 11 ← flips to page 2
+        ("congregation", "ቅዱስ ቅዱስ ቅዱስ እግዚአብሔር"),         # id 12
+        ("priest",       "ዝንቱ ውእቱ ሥጋየ"),                 # id 16
     ]
 
-    print(f"{'Speaker':<14} {'Query':<30} {'Match':<35} {'Score':>6}  {'Window'}")
-    print("─" * 110)
+    print(f"{'Speaker':<14} {'Query text':<32} {'→ Match':<30} {'Score':>5}  {'Page':>4}  Window")
+    print("─" * 105)
 
     for speaker, query in test_queries:
         result = matcher.match_text(query, model)
         m = result["meta"]
+        match_label = f"[id {m['id']}] {m['text'][:25]}"
         win = f"[{result['window'][0]},{result['window'][1]}] sz={result['window_size']}"
         print(
-            f"{speaker:<14} "
-            f"{query:<30} "
-            f"[{m['role']}] {m['text'][:32]:<35} "
-            f"{result['score']:>6.3f}  "
+            f"{speaker:<14}  "
+            f"{query:<32}  "
+            f"{match_label:<30}  "
+            f"{result['score']:>5.3f}  "
+            f"p{result['page']:>1}/{matcher.total_pages}  "
             f"{win}"
         )
-        print(f"  {matcher.window_summary()}")
-        print()
+        print(f"  {matcher.window_summary()}\n")
