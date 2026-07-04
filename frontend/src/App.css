@@ -1,0 +1,92 @@
+:root {
+  --bg: #0f1115;
+  --panel: #191c23;
+  --line: #232733;
+  --active: #2b6cb0;
+  --text: #e8eaed;
+  --muted: #8b91a0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 6rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 0.5rem 0 1rem;
+  z-index: 2;
+}
+.topbar h1 { font-size: 1.25rem; margin: 0; }
+
+.status { font-size: 0.9rem; font-weight: 600; }
+.status--open { color: #48bb78; }
+.status--connecting { color: #ecc94b; }
+.status--closed { color: #f56565; }
+
+/* "Now heard" panel */
+.now {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+.heard { color: var(--muted); margin-bottom: 0.75rem; }
+.heard em { color: var(--text); font-style: normal; }
+.backend { font-size: 0.8rem; opacity: 0.6; }
+
+/* Confidence bars */
+.bar-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.35rem 0; }
+.bar-label { width: 3.5rem; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
+.bar-track { flex: 1; height: 10px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; transition: width 0.3s ease, background 0.3s ease; }
+.bar-pct { width: 3rem; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+
+/* Liturgy list */
+.liturgy { list-style: none; padding: 0; margin: 0; }
+.line {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  margin-bottom: 0.35rem;
+  background: var(--panel);
+  opacity: 0.55;
+  transition: all 0.25s ease;
+}
+.line--active {
+  opacity: 1;
+  background: var(--active);
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(43, 108, 176, 0.4);
+}
+.role {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  background: var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.role--priest { color: #f6ad55; }
+.role--deacon { color: #63b3ed; }
+.role--congregation { color: #9ae6b4; }
+.text { font-size: 1.35rem; line-height: 1.5; }
